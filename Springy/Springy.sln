@@ -5,9 +5,7 @@ VisualStudioVersion = 15.0.28010.2046
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Springy", "Springy\Springy.csproj", "{B0CA6041-D004-45CD-820B-08FCCCFB0242}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XELibrary", "..\..\SimpleRPG\XELibrary\XELibrary.csproj", "{623010CD-3E24-4F0E-9EAE-922DAD230975}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Farseer", "..\..\..\..\Downloads\vgd2018-master (1)\Farseer\Farseer.csproj", "{0B03B2D6-BCDB-4E07-AAFA-4EF84EA6A31B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Farseer", "Farseer\Farseer.csproj", "{0B03B2D6-BCDB-4E07-AAFA-4EF84EA6A31B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -23,14 +21,6 @@ Global
 		{B0CA6041-D004-45CD-820B-08FCCCFB0242}.Release|Any CPU.ActiveCfg = Release|x86
 		{B0CA6041-D004-45CD-820B-08FCCCFB0242}.Release|x86.ActiveCfg = Release|x86
 		{B0CA6041-D004-45CD-820B-08FCCCFB0242}.Release|x86.Build.0 = Release|x86
-		{623010CD-3E24-4F0E-9EAE-922DAD230975}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{623010CD-3E24-4F0E-9EAE-922DAD230975}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{623010CD-3E24-4F0E-9EAE-922DAD230975}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{623010CD-3E24-4F0E-9EAE-922DAD230975}.Debug|x86.Build.0 = Debug|Any CPU
-		{623010CD-3E24-4F0E-9EAE-922DAD230975}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{623010CD-3E24-4F0E-9EAE-922DAD230975}.Release|Any CPU.Build.0 = Release|Any CPU
-		{623010CD-3E24-4F0E-9EAE-922DAD230975}.Release|x86.ActiveCfg = Release|Any CPU
-		{623010CD-3E24-4F0E-9EAE-922DAD230975}.Release|x86.Build.0 = Release|Any CPU
 		{0B03B2D6-BCDB-4E07-AAFA-4EF84EA6A31B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{0B03B2D6-BCDB-4E07-AAFA-4EF84EA6A31B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0B03B2D6-BCDB-4E07-AAFA-4EF84EA6A31B}.Debug|x86.ActiveCfg = Debug|Any CPU

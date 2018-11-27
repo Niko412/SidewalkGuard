@@ -6,6 +6,8 @@ using FarseerPhysics.Factories;
 using System.Collections.Generic;
 using System;
 using FarseerPhysics.Dynamics.Joints;
+using FarseerPhysics.Common;
+using Microsoft.Xna.Framework.Audio;
 
 namespace Springy
 {
@@ -14,21 +16,36 @@ namespace Springy
     /// </summary>
     public class Game1 : Game
     {
+        const int HEIGHT = 700, WIDTH = 350;
+        float timer = 3f, levelTimer = 3f;
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
-
         List<DrawablePhysicsObject> crateList;
         DrawablePhysicsObject floor;
-        KeyboardState prevKeyboardState;
         Random random;
         World world;
         List<DrawablePhysicsObject> paddles;
-
+        private int lives = 10, score = 0;
         DistanceJoint l;
-
+        DistanceJoint j;
+        SpriteFont spriteFont;
+        Texture2D youLose;
+        Vector2 trpadPos = new Vector2();
+        Cube cube = new Cube();
         const float unitToPixel = 100.0f;
         const float pixelToUnit = 1 / unitToPixel;
         Body body;
+        private DistanceJoint k;
+        DrawablePhysicsObject trampolinePaddle;
+        DrawablePhysicsObject simplePaddle;
+        private bool didSpawn = false;
+        SoundEffect hitSound, missSound, backgroundSound, loseSound, pouseOn, pouseOff;
+        SoundEffectInstance soundEffectInstance;
+        private bool isPaused = false;
+        private bool prevKeyboardState = false;
+        private bool currKeyboardState = false;
+        private bool isStarted = false;
+
         public Game1()
         {
             graphics = new GraphicsDeviceManager(this);
@@ -44,6 +61,9 @@ namespace Springy
         protected override void Initialize()
         {
             // TODO: Add your initialization logic here
+            graphics.PreferredBackBufferWidth = WIDTH;  // set this value to the desired width of your window
+            graphics.PreferredBackBufferHeight = HEIGHT;   // set this value to the desired height of your window
+            graphics.ApplyChanges();
             paddles = new List<DrawablePhysicsObject>();
             base.Initialize();
         }
@@ -54,120 +74,100 @@ namespace Springy
         /// </summary>
         protected override void LoadContent()
         {
+            backgroundSound = Content.Load<SoundEffect>("background_music");
+            soundEffectInstance = backgroundSound.CreateInstance();
+            soundEffectInstance.IsLooped = true;
+            soundEffectInstance.Play();
+            hitSound = Content.Load<SoundEffect>("hit");
+            missSound = Content.Load<SoundEffect>("miss");
+            loseSound = Content.Load<SoundEffect>("boo_sound");
+            youLose = Content.Load<Texture2D>("you_lose_sticker");
+            pouseOff = Content.Load<SoundEffect>("pouseOff");
+            pouseOn = Content.Load<SoundEffect>("pouseOn");
+
             // Create a new SpriteBatch, which can be used to draw textures.
             spriteBatch = new SpriteBatch(GraphicsDevice);
             world = new World(new Vector2(0, 9.81f));
-
+            spriteFont = Content.Load<SpriteFont>("font");
             Vector2 size = new Vector2(50, 50);
             body = BodyFactory.CreateRectangle(world, size.X * pixelToUnit, size.Y * pixelToUnit, 1);
             body.BodyType = BodyType.Dynamic;
             body.Position = new Vector2((GraphicsDevice.Viewport.Width / 2.0f) * pixelToUnit, 0);
+
 
             random = new Random();
 
             floor = new DrawablePhysicsObject(world, Content.Load<Texture2D>("Floor"), new Vector2(GraphicsDevice.Viewport.Width, 100.0f), 1000);
             floor.Position = new Vector2(GraphicsDevice.Viewport.Width / 2.0f, GraphicsDevice.Viewport.Height - 50);
             floor.body.BodyType = BodyType.Static;
-            floor.body.Rotation = 0.0f;
+            floor.body.CollidesWith = Category.All;
+            floor.body.OnCollision += OnCollisionFloor;
+            floor.body.CollisionCategories = Category.Cat11;
             crateList = new List<DrawablePhysicsObject>();
-            prevKeyboardState = Keyboard.GetState();
+            //prevKeyboardState1 = Keyboard.GetState();
 
-
-            DrawablePhysicsObject simplePaddle = new DrawablePhysicsObject(
-                world,
-                Content.Load<Texture2D>("Paddle"),
-                new Vector2(128, 16),
-                10
-            );
-            simplePaddle.body.BodyType = BodyType.Static;
-            simplePaddle.Position = new Vector2(150, 200);
-            paddles.Add(simplePaddle);
-
-
-            {
-                DrawablePhysicsObject motorPaddle = new DrawablePhysicsObject(
-                    world,
-                    Content.Load<Texture2D>("Paddle"),
-                    new Vector2(128, 16),
-                    10
-                    );
-
-                Body motorPaddleAxle = BodyFactory.CreateCircle(world, 0.1f, 10f);
-                // motorPaddle.body = new Body(world, CoordinateHelper.ToWorld( new Vector2(10)));
-                var j = JointFactory.CreateRevoluteJoint
-                    (
-                        world,
-                        motorPaddle.body,
-                        motorPaddleAxle,
-                         CoordinateHelper.ToWorld(new Vector2(64f, 10f)),
-                         CoordinateHelper.ToWorld(new Vector2(400.0f, 200.0f))
-                        );
-
-                // set speed and torque  
-                j.CollideConnected = false;
-                j.MotorSpeed = MathHelper.Pi;
-                j.MotorImpulse = 100;
-                j.MotorEnabled = true;
-                j.MaxMotorTorque = 100;
-                //  paddles.Add(motorPaddle);
-
-            }
-            DrawablePhysicsObject trampolinePaddle = new DrawablePhysicsObject
+            trampolinePaddle = new DrawablePhysicsObject
             (
                 world,
                 Content.Load<Texture2D>("Paddle"),
-                new Vector2(128, 16),
+                new Vector2(50, 16),
                 10
             );
             trampolinePaddle.body.BodyType = BodyType.Dynamic;
-            trampolinePaddle.Position = new Vector2(150, 150);
+            trampolinePaddle.Position = new Vector2(150, 400);
             trampolinePaddle.body.Rotation = 0;
+            trampolinePaddle.body.CollidesWith = Category.All;
+            trampolinePaddle.body.CollisionCategories = Category.Cat11;
+            trampolinePaddle.body.CollisionGroup = 2;
+            trampolinePaddle.body.OnCollision += Body_OnCollision;
+            trampolinePaddle.body.Mass = 100;
+            List<DrawablePhysicsObject> borders = new List<DrawablePhysicsObject>();
+            var left = new DrawablePhysicsObject(world, Content.Load<Texture2D>("Paddle"), new Vector2(5f, HEIGHT * 0.2f), 10000);
+            left.Position = new Vector2(1, HEIGHT - 40);
+            left.body.BodyType = BodyType.Static;
+            left.body.CollidesWith = Category.All;
+            left.body.CollisionCategories = Category.Cat11;
+            var right = new DrawablePhysicsObject(world, Content.Load<Texture2D>("Paddle"), new Vector2(5f, HEIGHT * 0.2f), 10000);
+            right.Position = new Vector2(WIDTH - 1, HEIGHT - 40);
+            right.body.BodyType = BodyType.Static;
+            right.body.CollidesWith = Category.All;
+            right.body.CollisionCategories = Category.Cat11;
 
-            l = JointFactory.CreateDistanceJoint
-            (
-                world,
-                simplePaddle.body,
-                trampolinePaddle.body,
-                simplePaddle.Position,                
-                trampolinePaddle.Position              
-            );
-            l.CollideConnected = false;
-            l.Length = 100f;
-            l.Frequency = 1f;
-            l.DampingRatio = 0.5f;
 
+
+            paddles.Add(right);
+            paddles.Add(left);
             paddles.Add(trampolinePaddle);
 
-            // l.Frequency = 2.0f;
-            //  l.DampingRatio = 0.1f;
-
-            //var r = JointFactory.CreateDistanceJoint
-            //(
-            //    world,
-            //    floor.body,
-            //    trampolinePaddle.body,
-            //    CoordinateHelper.ToWorld(trampolinePaddle.Position + new Vector2(64, 0)),
-            //    CoordinateHelper.ToWorld(Vector2.UnitY)
-            //);
-
-            //r.CollideConnected = true;
-            //r.Frequency = -2.0f;
-            //r.DampingRatio = 0.05f;
-
-            //world.AddJoint(l);
-            // world.AddJoint(r);
-
-            //paddles.Add(trampolinePaddle);
-
-            // TODO: use this.Content to load your game content here
         }
+
+        private bool OnCollisionFloor(Fixture fixtureA, Fixture fixtureB, FarseerPhysics.Dynamics.Contacts.Contact contact)
+        {
+            //if(fixtureB.CollisionCategories)
+            if (fixtureB.CollisionGroup == 3)
+            {
+                lives -= 1;
+                missSound.Play();
+
+            }
+
+            return true;
+        }
+
+        private bool Body_OnCollision(Fixture fixtureA, Fixture fixtureB, FarseerPhysics.Dynamics.Contacts.Contact contact)
+        {
+            if (fixtureB.CollisionCategories == Category.Cat2)
+            {
+                fixtureB.Body.ApplyAngularImpulse((float)(random.NextDouble() / 2 == 0 ? (random.NextDouble() + 1) * 5 : -(random.NextDouble() + 1) * 5));
+                hitSound.Play();
+                score++;
+            }
+            return true;
+        }
+
         private void SpawnCrate()
         {
-            DrawablePhysicsObject crate;
-            crate = new DrawablePhysicsObject(world, Content.Load<Texture2D>("Crate"), new Vector2(50.0f, 50.0f), 0.1f);
-            crate.Position = new Vector2(random.Next(50, GraphicsDevice.Viewport.Width - 50), 1);
-
-            crateList.Add(crate);
+            crateList.Add(cube.SpawnCube(world, this));
         }
         /// <summary>
         /// UnloadContent will be called once per game and is the place to unload
@@ -185,30 +185,85 @@ namespace Springy
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         protected override void Update(GameTime gameTime)
         {
-            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
-                Exit();
-
-            world.Step((float)gameTime.ElapsedGameTime.TotalSeconds);
-            KeyboardState keyboardState = Keyboard.GetState();
-            if (keyboardState.IsKeyDown(Keys.Space) && !prevKeyboardState.IsKeyDown(Keys.Space))
+            if (isStarted)
             {
-                SpawnCrate();
+                currKeyboardState = Keyboard.GetState().IsKeyDown(Keys.Space);
+                if (Keyboard.GetState().IsKeyDown(Keys.Space))
+                {
+                    if (prevKeyboardState != currKeyboardState)
+                    {
+                        isPaused = !isPaused;
+                        if (isPaused)
+                        {
+                            soundEffectInstance.Pause();
+                            pouseOn.Play();
+                        }
+                        else
+                        {
+                            pouseOff.Play();
+                            soundEffectInstance.Play();
+                        }
+                    }
+                }
+                prevKeyboardState = Keyboard.GetState().IsKeyDown(Keys.Space);
+                if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
+                    Exit();
+                if (!isPaused)
+                {
+                    if (lives > 0)
+                    {
+                        float elapsed = (float)gameTime.ElapsedGameTime.TotalSeconds;
+                        timer -= elapsed;
+
+                        if (timer < 0)
+                        {
+                            //Timer expired, execute action
+                            levelTimer -= levelTimer * 0.025f;
+                            timer = levelTimer;   //Reset Timer
+                            SpawnCrate();
+                        }
+                        if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
+                            Exit();
+                        if (Keyboard.GetState().IsKeyDown(Keys.Left))
+                        {
+                            if (trampolinePaddle.Position.X > 0.1)
+                                trampolinePaddle.body.ApplyLinearImpulse(new Vector2(trampolinePaddle.body.LinearVelocity.X > 0 ? -100f : -35f, 0.001f));
+                            //simplePaddle.Position = new Vector2(simplePaddle.Position.X - 1, simplePaddle.Position.Y);
+                        }
+                        if (Keyboard.GetState().IsKeyDown(Keys.Right))
+                        {
+                            trampolinePaddle.body.ApplyLinearImpulse(new Vector2(trampolinePaddle.body.LinearVelocity.X > 0 ? 100f : 35f, 0.001f));
+
+
+                        }
+                        world.Step((float)gameTime.ElapsedGameTime.TotalSeconds);
+                        MouseState state = Mouse.GetState();
+                        if (lives == 0)
+                        {
+                            loseSound.Play();
+
+                        }
+                    }
+                    if (lives == 0 && Keyboard.GetState().IsKeyDown(Keys.R))
+                    {
+                        foreach (var item in crateList)
+                        {
+                            item.body.CollidesWith = Category.None;
+                        }
+                        crateList.Clear();
+                        lives = 10;
+                        timer = levelTimer = 3f;
+                        score = 0;
+                    }
+                }
             }
-            MouseState state = Mouse.GetState();
 
-            //try
-            //{
-            //    l.WorldAnchorA = CoordinateHelper.ToWorld(new Vector2(state.X, state.Y));
-            //    l.WorldAnchorB = CoordinateHelper.ToWorld(new Vector2(state.X, state.Y));
-            //}
-            //catch (Exception)
-            //{
-
-            //    throw;
-            //}
-
-            prevKeyboardState = keyboardState;
-            // TODO: Add your update logic here
+            if (Keyboard.GetState().IsKeyDown(Keys.Space))
+            {
+                prevKeyboardState = Keyboard.GetState().IsKeyDown(Keys.Space);
+                isStarted = true;
+            }
+            currKeyboardState = Keyboard.GetState().IsKeyDown(Keys.Space);
 
             base.Update(gameTime);
         }
@@ -221,17 +276,45 @@ namespace Springy
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
             spriteBatch.Begin();
-            foreach (DrawablePhysicsObject crate in crateList)
+            if (isStarted)
             {
-                crate.Draw(spriteBatch);
+                foreach (DrawablePhysicsObject crate in crateList)
+                {
+                    crate.Draw(spriteBatch);
+                }
+                foreach (DrawablePhysicsObject paddle in paddles)
+                {
+                    paddle.Draw(spriteBatch);
+                }
+                floor.Draw(spriteBatch);
+                Vector2 textSize;
+                if (lives < 1)
+                {
+                    spriteBatch.Draw(youLose, new Rectangle((int)(WIDTH - youLose.Width * 0.2) / 2, (int)(HEIGHT - youLose.Height * 0.2) / 2, (int)(youLose.Width * 0.2), (int)(youLose.Height * 0.2)), Color.White);
+                    string text = "        Press 'R' \nPress 'ECS' to exit";
+                    textSize = spriteFont.MeasureString(text);
+                    spriteBatch.DrawString(spriteFont, text, new Vector2((WIDTH - textSize.X) / 2, (WIDTH - textSize.Y) / 2 + youLose.Width * 0.2f), Color.White);
+
+                }
+                string lives_s = "Lives: " + lives.ToString();
+                string score_s = "Score: " + score.ToString();
+                textSize = spriteFont.MeasureString(lives_s);
+                spriteBatch.DrawString(spriteFont, lives_s, new Vector2(5, 5), Color.Maroon);
+                spriteBatch.DrawString(spriteFont, score_s, new Vector2(5, textSize.Y + 5), Color.Khaki);
+                if (isPaused)
+                {
+                    string pause_s = "PAUSE";
+                    textSize = spriteFont.MeasureString(pause_s);
+                    spriteBatch.DrawString(spriteFont, pause_s, new Vector2((WIDTH - textSize.X) / 2, (HEIGHT - textSize.Y) / 2), Color.Black);
+                }
             }
-            foreach (DrawablePhysicsObject paddle in paddles)
+            else
             {
-                paddle.Draw(spriteBatch);
+                string welcome_s = "WELCOME TO SIDEWALK GUARD!\n      PRESS SPACE TO BEGIN!";
+                Vector2 textSize = spriteFont.MeasureString(welcome_s);
+                spriteBatch.DrawString(spriteFont, welcome_s, new Vector2((WIDTH - textSize.X) / 2 + (textSize.X / 2) * 0.35f, (HEIGHT - textSize.Y) / 2), Color.Black, 0.0f, new Vector2(0, 0), 0.65f, SpriteEffects.None, 0f);
             }
-            floor.Draw(spriteBatch);
             spriteBatch.End();
-            // TODO: Add your drawing code here
 
             base.Draw(gameTime);
         }

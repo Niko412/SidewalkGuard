@@ -42,6 +42,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CoordinateHelper.cs" />
+    <Compile Include="Cube.cs" />
     <Compile Include="DrawablePhysicsObject.cs" />
     <Compile Include="Game1.cs" />
     <Compile Include="Program.cs" />
@@ -62,13 +63,9 @@
     <None Include="app.manifest" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\..\Downloads\vgd2018-master %281%29\Farseer\Farseer.csproj">
+    <ProjectReference Include="..\Farseer\Farseer.csproj">
       <Project>{0b03b2d6-bcdb-4e07-aafa-4ef84ea6a31b}</Project>
       <Name>Farseer</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\SimpleRPG\XELibrary\XELibrary.csproj">
-      <Project>{623010cd-3e24-4f0e-9eae-922dad230975}</Project>
-      <Name>XELibrary</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
