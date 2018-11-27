@@ -9,7 +9,7 @@ using FarseerPhysics.Dynamics.Joints;
 using FarseerPhysics.Common;
 using Microsoft.Xna.Framework.Audio;
 
-namespace Springy
+namespace SidewalkFuard
 {
     /// <summary>
     /// This is the main type for your game.

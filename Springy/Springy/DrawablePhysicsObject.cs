@@ -8,7 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Springy
+namespace SidewalkFuard
 {
     public class DrawablePhysicsObject
     {

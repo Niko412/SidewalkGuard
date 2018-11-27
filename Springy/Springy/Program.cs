@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Springy
+namespace SidewalkFuard
 {
 #if WINDOWS || LINUX
     /// <summary>
