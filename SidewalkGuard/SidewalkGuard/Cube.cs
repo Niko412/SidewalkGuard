@@ -11,9 +11,11 @@ namespace SidewalkFuard
 {
     public class Cube
     {
+        /// <summary>
+        /// In this section I'm spawning boexs' each box comes in random x position
+        /// </summary>
         private Random random;
         World world;
-        static bool hit = false;
         public DrawablePhysicsObject SpawnCube(World world, Game game)
         {
             random = new Random();

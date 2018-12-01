@@ -18,37 +18,25 @@ namespace SidewalkFuard
     {
         const int HEIGHT = 700, WIDTH = 350;
         float timer = 3f, levelTimer = 3f;
-        GraphicsDeviceManager graphics;
+        GraphicsDeviceManager graphicsDeviceManager;
         SpriteBatch spriteBatch;
-        List<DrawablePhysicsObject> crateList;
-        DrawablePhysicsObject floor;
+        DrawablePhysicsObject floor,slider;
         Random random;
         World world;
-        List<DrawablePhysicsObject> paddles;
+        List<DrawablePhysicsObject> paddles,boxes;
         private int lives = 10, score = 0;
-        DistanceJoint l;
-        DistanceJoint j;
         SpriteFont spriteFont;
         Texture2D youLose;
-        Vector2 trpadPos = new Vector2();
         Cube cube = new Cube();
-        const float unitToPixel = 100.0f;
-        const float pixelToUnit = 1 / unitToPixel;
+        const float unitToPixel = 100.0f, pixelToUnit = 1 / unitToPixel;
         Body body;
-        private DistanceJoint k;
-        DrawablePhysicsObject trampolinePaddle;
-        DrawablePhysicsObject simplePaddle;
-        private bool didSpawn = false;
         SoundEffect hitSound, missSound, backgroundSound, loseSound, pouseOn, pouseOff;
         SoundEffectInstance soundEffectInstance;
-        private bool isPaused = false;
-        private bool prevKeyboardState = false;
-        private bool currKeyboardState = false;
-        private bool isStarted = false;
+        private bool didSpawn = false, isPaused = false, prevKeyboardState = false, currKeyboardState = false, isStarted = false;
 
         public Game1()
         {
-            graphics = new GraphicsDeviceManager(this);
+            graphicsDeviceManager = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
         }
 
@@ -60,10 +48,9 @@ namespace SidewalkFuard
         /// </summary>
         protected override void Initialize()
         {
-            // TODO: Add your initialization logic here
-            graphics.PreferredBackBufferWidth = WIDTH;  // set this value to the desired width of your window
-            graphics.PreferredBackBufferHeight = HEIGHT;   // set this value to the desired height of your window
-            graphics.ApplyChanges();
+            graphicsDeviceManager.PreferredBackBufferWidth = WIDTH;  // set this value to the desired width of your window
+            graphicsDeviceManager.PreferredBackBufferHeight = HEIGHT;   // set this value to the desired height of your window
+            graphicsDeviceManager.ApplyChanges();
             paddles = new List<DrawablePhysicsObject>();
             base.Initialize();
         }
@@ -103,24 +90,26 @@ namespace SidewalkFuard
             floor.body.CollidesWith = Category.All;
             floor.body.OnCollision += OnCollisionFloor;
             floor.body.CollisionCategories = Category.Cat11;
-            crateList = new List<DrawablePhysicsObject>();
+            boxes = new List<DrawablePhysicsObject>();
             //prevKeyboardState1 = Keyboard.GetState();
 
-            trampolinePaddle = new DrawablePhysicsObject
+            slider = new DrawablePhysicsObject
             (
                 world,
                 Content.Load<Texture2D>("Paddle"),
                 new Vector2(50, 16),
                 10
             );
-            trampolinePaddle.body.BodyType = BodyType.Dynamic;
-            trampolinePaddle.Position = new Vector2(150, 400);
-            trampolinePaddle.body.Rotation = 0;
-            trampolinePaddle.body.CollidesWith = Category.All;
-            trampolinePaddle.body.CollisionCategories = Category.Cat11;
-            trampolinePaddle.body.CollisionGroup = 2;
-            trampolinePaddle.body.OnCollision += Body_OnCollision;
-            trampolinePaddle.body.Mass = 100;
+            slider.body.BodyType = BodyType.Dynamic;
+            slider.Position = new Vector2(150, 400);
+            slider.body.Rotation = 0;
+            slider.body.CollidesWith = Category.All;
+            slider.body.CollisionCategories = Category.Cat11;
+            slider.body.CollisionGroup = 2;
+            slider.body.OnCollision += Body_OnCollision;
+            slider.body.Mass = 100;
+
+            //Left and Right "Slider" limiters
             List<DrawablePhysicsObject> borders = new List<DrawablePhysicsObject>();
             var left = new DrawablePhysicsObject(world, Content.Load<Texture2D>("Paddle"), new Vector2(5f, HEIGHT * 0.2f), 10000);
             left.Position = new Vector2(1, HEIGHT - 40);
@@ -137,20 +126,17 @@ namespace SidewalkFuard
 
             paddles.Add(right);
             paddles.Add(left);
-            paddles.Add(trampolinePaddle);
+            paddles.Add(slider);
 
         }
 
         private bool OnCollisionFloor(Fixture fixtureA, Fixture fixtureB, FarseerPhysics.Dynamics.Contacts.Contact contact)
         {
-            //if(fixtureB.CollisionCategories)
             if (fixtureB.CollisionGroup == 3)
             {
                 lives -= 1;
                 missSound.Play();
-
             }
-
             return true;
         }
 
@@ -158,7 +144,7 @@ namespace SidewalkFuard
         {
             if (fixtureB.CollisionCategories == Category.Cat2)
             {
-                fixtureB.Body.ApplyAngularImpulse((float)(random.NextDouble() / 2 == 0 ? (random.NextDouble() + 1) * 5 : -(random.NextDouble() + 1) * 5));
+                fixtureB.Body.ApplyAngularImpulse((float)(random.NextDouble() / 2 == 0 ? (random.NextDouble() + 1) * 1.5 : -(random.NextDouble() + 1) * 1.5));
                 hitSound.Play();
                 score++;
             }
@@ -167,22 +153,14 @@ namespace SidewalkFuard
 
         private void SpawnCrate()
         {
-            crateList.Add(cube.SpawnCube(world, this));
+            boxes.Add(cube.SpawnCube(world, this));
         }
-        /// <summary>
-        /// UnloadContent will be called once per game and is the place to unload
-        /// game-specific content.
-        /// </summary>
+
         protected override void UnloadContent()
         {
             // TODO: Unload any non ContentManager content here
         }
 
-        /// <summary>
-        /// Allows the game to run logic such as updating the world,
-        /// checking for collisions, gathering input, and playing audio.
-        /// </summary>
-        /// <param name="gameTime">Provides a snapshot of timing values.</param>
         protected override void Update(GameTime gameTime)
         {
             if (isStarted)
@@ -226,13 +204,14 @@ namespace SidewalkFuard
                             Exit();
                         if (Keyboard.GetState().IsKeyDown(Keys.Left))
                         {
-                            if (trampolinePaddle.Position.X > 0.1)
-                                trampolinePaddle.body.ApplyLinearImpulse(new Vector2(trampolinePaddle.body.LinearVelocity.X > 0 ? -100f : -35f, 0.001f));
-                            //simplePaddle.Position = new Vector2(simplePaddle.Position.X - 1, simplePaddle.Position.Y);
+                            if (slider.Position.X > 0.1)
+                            {
+                                slider.body.ApplyLinearImpulse(new Vector2(slider.body.LinearVelocity.X > 0 ? -100f : -35f, 0.001f));
+                            }
                         }
                         if (Keyboard.GetState().IsKeyDown(Keys.Right))
                         {
-                            trampolinePaddle.body.ApplyLinearImpulse(new Vector2(trampolinePaddle.body.LinearVelocity.X > 0 ? 100f : 35f, 0.001f));
+                            slider.body.ApplyLinearImpulse(new Vector2(slider.body.LinearVelocity.X > 0 ? 100f : 35f, 0.001f));
 
 
                         }
@@ -246,11 +225,11 @@ namespace SidewalkFuard
                     }
                     if (lives == 0 && Keyboard.GetState().IsKeyDown(Keys.R))
                     {
-                        foreach (var item in crateList)
+                        foreach (var item in boxes)
                         {
                             item.body.CollidesWith = Category.None;
                         }
-                        crateList.Clear();
+                        boxes.Clear();
                         lives = 10;
                         timer = levelTimer = 3f;
                         score = 0;
@@ -278,7 +257,7 @@ namespace SidewalkFuard
             spriteBatch.Begin();
             if (isStarted)
             {
-                foreach (DrawablePhysicsObject crate in crateList)
+                foreach (DrawablePhysicsObject crate in boxes)
                 {
                     crate.Draw(spriteBatch);
                 }

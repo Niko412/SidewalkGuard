@@ -9,11 +9,13 @@ namespace SidewalkFuard
 {
     public static class CoordinateHelper
     {
-        // Because Farseer uses 1 unit = 1 meter we need to convert
-        // between pixel coordinates and physics coordinates.
-        // I've chosen to use the rule that 100 pixels is one meter.
-        // We have to take care to convert between these two
-        // coordinate-sets wherever we mix them!
+        /// <summary>
+        /// Because Farseer uses 1 unit = 1 meter we need to convert
+        /// between pixel coordinates and physics coordinates.
+        /// I've chosen to use the rule that 100 pixels is one meter.
+        /// We have to take care to convert between these two
+        /// coordinate-sets wherever we mix them!
+        /// </summary>
 
         public const float unitToPixel = 100.0f;
         public const float pixelToUnit = 1 / unitToPixel;

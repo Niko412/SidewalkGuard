@@ -9,8 +9,8 @@
     <ProjectGuid>{B0CA6041-D004-45CD-820B-08FCCCFB0242}</ProjectGuid>
     <OutputType>WinExe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Springy</RootNamespace>
-    <AssemblyName>Springy</AssemblyName>
+    <RootNamespace>SidewalkGuard</RootNamespace>
+    <AssemblyName>SidewalkGuard</AssemblyName>
     <FileAlignment>512</FileAlignment>
     <MonoGamePlatform>Windows</MonoGamePlatform>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
