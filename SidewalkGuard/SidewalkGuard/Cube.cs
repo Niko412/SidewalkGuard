@@ -24,6 +24,7 @@ namespace SidewalkFuard
             crate.Position = new Vector2(random.Next(50, game.GraphicsDevice.Viewport.Width - 50), 1);
             crate.body.CollidesWith = Category.All;
             crate.body.CollisionCategories = Category.Cat2;
+            //Collision group of a box
             crate.body.CollisionGroup = 3;
             return crate;
         }

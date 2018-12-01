@@ -132,6 +132,7 @@ namespace SidewalkFuard
 
         private bool OnCollisionFloor(Fixture fixtureA, Fixture fixtureB, FarseerPhysics.Dynamics.Contacts.Contact contact)
         {
+            //the boxes are in Collision group 3
             if (fixtureB.CollisionGroup == 3)
             {
                 lives -= 1;
